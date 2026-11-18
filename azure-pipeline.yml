@@ -1,0 +1,70 @@
+trigger:
+  branches:
+    include:
+      - main
+      - feature/*
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+
+# -----------------------------
+# CI STAGE
+# -----------------------------
+- stage: CI
+  displayName: "CI - Build and Test"
+
+  jobs:
+  - job: BuildAndTest
+    displayName: "Build and Test Application"
+
+    steps:
+    - checkout: self
+      displayName: "Checkout Code"
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: "3.11"
+      displayName: "Setup Python"
+
+    - script: |
+        python -m pip install --upgrade pip
+        python -m pip install pytest
+      displayName: "Install Dependencies"
+
+    - script: |
+        python -m py_compile app.py
+      displayName: "Validate Application"
+
+    - script: |
+        python -m pytest test_app.py -v
+      displayName: "Run Unit Tests"
+
+
+# -----------------------------
+# CD STAGE
+# -----------------------------
+- stage: CD
+  displayName: "CD - Deploy to DEV"
+
+  dependsOn:
+  - CI
+
+  condition: |
+    and(
+      succeeded(),
+      eq(variables['Build.SourceBranch'], 'refs/heads/main')
+    )
+
+  jobs:
+  - job: DeployDemo
+    displayName: "Deploy Application"
+
+    steps:
+    - script: |
+        echo "Starting deployment..."
+        echo "Deploying AI Proposal Assistant Demo"
+        echo "Environment: DEV"
+        echo "Deployment completed successfully"
+      displayName: "Deploy to DEV"
